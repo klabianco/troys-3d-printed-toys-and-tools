@@ -10,12 +10,19 @@ async function readProducts() {
     const res = await fetch(blob.url);
     return await res.json();
   } catch {
-    // Fall back to bundled products.json for initial data
+    // Blob doesn't exist yet — seed it from the bundled products.json
     const { readFile } = await import("fs/promises");
     const path = await import("path");
     const filePath = path.join(process.cwd(), "src/data/products.json");
     const data = await readFile(filePath, "utf-8");
-    return JSON.parse(data);
+    const products = JSON.parse(data);
+    // Persist to Blob so future saves work
+    await put(PRODUCTS_BLOB_KEY, JSON.stringify(products, null, 2), {
+      access: "public",
+      addRandomSuffix: false,
+      allowOverwrite: true,
+    });
+    return products;
   }
 }
 
@@ -35,6 +42,7 @@ export async function PUT(req: NextRequest) {
   await put(PRODUCTS_BLOB_KEY, JSON.stringify(products, null, 2), {
     access: "public",
     addRandomSuffix: false,
+    allowOverwrite: true,
   });
   return NextResponse.json({ ok: true });
 }
