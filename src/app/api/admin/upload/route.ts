@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   const ext = path.extname(file.name) || ".jpg";
   const filename = `${slug}${ext}`;
 
-  const { url } = await put(`images/products/${filename}`, file, { access: "public" });
+  const { url } = await put(`images/products/${filename}`, file, { access: "public", addRandomSuffix: false, allowOverwrite: true });
 
   return NextResponse.json({ path: url });
 }

@@ -71,7 +71,7 @@ Return ONLY the JSON object, no markdown fences or other text.`,
   // Save the uploaded image to Vercel Blob
   const ext = path.extname(file.name) || ".jpg";
   const filename = `${slug}${ext}`;
-  const { url } = await put(`images/products/${filename}`, buffer, { access: "public" });
+  const { url } = await put(`images/products/${filename}`, buffer, { access: "public", addRandomSuffix: false, allowOverwrite: true });
 
   return NextResponse.json({
     slug,
