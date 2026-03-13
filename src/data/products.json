@@ -1,0 +1,34 @@
+[
+  {
+    "slug": "no-touch-door-opener-keychain",
+    "name": "Box Opener",
+    "description": "The Box Opener is a versatile tool designed to effortlessly handle all your package opening needs. Crafted with precision, its ergonomic design ensures safe and easy usage without damaging the contents inside. Ideal for home, office, or warehouse environments.",
+    "shortDescription": "Effortlessly open packages.",
+    "category": "Tools",
+    "images": [
+      "/images/products/no-touch-door-opener-keychain.jpeg"
+    ],
+    "price": 299,
+    "stlFiles": [
+      "/stl/no-touch-door-opener-keychain.stl"
+    ],
+    "stlPrice": 129,
+    "featured": true,
+    "inStock": true
+  },
+  {
+    "slug": "dragon-egg-container",
+    "name": "Dragon Egg Container",
+    "description": "This intricately designed dragon egg container is perfect for storing small items or using as a decorative piece. Its detailed scale pattern makes it a unique and eye-catching addition to any collection.  It includes 2 dragons inside.",
+    "shortDescription": "Intricate dragon egg container with 2 dragons inside!",
+    "category": "Toys",
+    "images": [
+      "/images/products/dragon-egg-container.jpeg"
+    ],
+    "price": 499,
+    "stlFiles": [],
+    "stlPrice": 299,
+    "featured": true,
+    "inStock": true
+  }
+]
