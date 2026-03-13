@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
+import { put } from "@vercel/blob";
 import path from "path";
 import { requireAdmin } from "@/lib/admin-auth";
 
@@ -17,12 +17,8 @@ export async function POST(req: NextRequest) {
 
   const ext = path.extname(file.name) || ".jpg";
   const filename = `${slug}${ext}`;
-  const dir = path.join(process.cwd(), "public/images/products");
-  await mkdir(dir, { recursive: true });
 
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const filepath = path.join(dir, filename);
-  await writeFile(filepath, buffer);
+  const { url } = await put(`images/products/${filename}`, file, { access: "public" });
 
-  return NextResponse.json({ path: `/images/products/${filename}` });
+  return NextResponse.json({ path: url });
 }

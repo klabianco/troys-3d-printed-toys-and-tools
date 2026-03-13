@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import OpenAI from "openai";
+import { put } from "@vercel/blob";
 import { requireAdmin } from "@/lib/admin-auth";
 
 export async function POST(req: NextRequest) {
@@ -68,12 +68,10 @@ Return ONLY the JSON object, no markdown fences or other text.`,
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 
-  // Save the uploaded image
+  // Save the uploaded image to Vercel Blob
   const ext = path.extname(file.name) || ".jpg";
   const filename = `${slug}${ext}`;
-  const dir = path.join(process.cwd(), "public/images/products");
-  await mkdir(dir, { recursive: true });
-  await writeFile(path.join(dir, filename), buffer);
+  const { url } = await put(`images/products/${filename}`, buffer, { access: "public" });
 
   return NextResponse.json({
     slug,
@@ -81,7 +79,7 @@ Return ONLY the JSON object, no markdown fences or other text.`,
     description: productData.description,
     shortDescription: productData.shortDescription,
     category: productData.category,
-    images: [`/images/products/${filename}`],
+    images: [url],
     price: productData.price,
     stlFiles: [],
     stlPrice: productData.stlPrice,

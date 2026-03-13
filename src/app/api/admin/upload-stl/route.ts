@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { put } from "@vercel/blob";
 import { requireAdmin } from "@/lib/admin-auth";
 
 export async function POST(req: NextRequest) {
@@ -15,13 +14,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing file or slug" }, { status: 400 });
   }
 
-  const dir = path.join(process.cwd(), "public/stl");
-  await mkdir(dir, { recursive: true });
+  const { url } = await put(`stl/${file.name}`, file, { access: "public" });
 
-  // Keep the original filename
-  const filename = file.name;
-  const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(path.join(dir, filename), buffer);
-
-  return NextResponse.json({ path: `/stl/${filename}` });
+  return NextResponse.json({ path: url });
 }
