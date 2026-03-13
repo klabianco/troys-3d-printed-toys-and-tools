@@ -4,9 +4,8 @@ import path from "path";
 import OpenAI from "openai";
 import { requireAdmin } from "@/lib/admin-auth";
 
-const client = new OpenAI();
-
 export async function POST(req: NextRequest) {
+  const client = new OpenAI();
   const denied = await requireAdmin();
   if (denied) return denied;
 
