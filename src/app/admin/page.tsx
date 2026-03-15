@@ -133,6 +133,7 @@ export default function AdminPage() {
       stlPrice: 0,
       featured: false,
       inStock: true,
+      colorParts: [],
     };
     setProducts((prev) => [...prev, newProduct]);
     setSaved(false);
@@ -502,6 +503,49 @@ export default function AdminPage() {
                     />
                     In Stock
                   </label>
+                </div>
+
+                <div>
+                  <div className="mb-1 flex items-center gap-3">
+                    <label className="text-xs font-medium text-gray-500">Color Parts:</label>
+                    <button
+                      onClick={() => {
+                        const name = prompt("Part name (e.g. Top, Bottom, Body):");
+                        if (!name?.trim()) return;
+                        const existing = product.colorParts || [];
+                        updateProduct(product.slug, "colorParts", [...existing, name.trim()]);
+                      }}
+                      className="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-600 transition hover:bg-gray-50"
+                    >
+                      + Add Part
+                    </button>
+                  </div>
+                  {product.colorParts && product.colorParts.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {product.colorParts.map((part, i) => (
+                        <span
+                          key={i}
+                          className="inline-flex items-center gap-1 rounded bg-gray-100 px-2 py-1 text-xs text-gray-600"
+                        >
+                          {part}
+                          <button
+                            onClick={() =>
+                              updateProduct(
+                                product.slug,
+                                "colorParts",
+                                (product.colorParts || []).filter((_, j) => j !== i)
+                              )
+                            }
+                            className="ml-1 text-red-400 hover:text-red-600"
+                          >
+                            &times;
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-xs text-gray-400">No color parts — customers won&apos;t pick colors</span>
+                  )}
                 </div>
 
                 <div>

@@ -12,6 +12,7 @@ export interface Product {
   stlPrice: number;
   featured: boolean;
   inStock: boolean;
+  colorParts?: string[];
 }
 
 const products: Product[] = productsData;

@@ -4,7 +4,7 @@ import { getBySlug } from "@/lib/products";
 
 export async function POST(req: NextRequest) {
   try {
-    const { slug, type } = await req.json();
+    const { slug, type, colorSelections } = await req.json();
 
     const product = getBySlug(slug);
     if (!product) {
@@ -21,6 +21,16 @@ export async function POST(req: NextRequest) {
     }
 
     const origin = req.headers.get("origin") || "http://localhost:3000";
+
+    // Build color metadata for Stripe (e.g. color_Top: "Red")
+    const metadata: Record<string, string> = {};
+    if (colorSelections && typeof colorSelections === "object") {
+      for (const [part, color] of Object.entries(colorSelections)) {
+        if (typeof color === "string") {
+          metadata[`color_${part}`] = color;
+        }
+      }
+    }
 
     const stripe = getStripe();
     const session = await stripe.checkout.sessions.create({
@@ -40,6 +50,7 @@ export async function POST(req: NextRequest) {
           quantity: 1,
         },
       ],
+      ...(Object.keys(metadata).length > 0 ? { metadata } : {}),
       success_url: isStl
         ? `${origin}/products/${product.slug}?checkout=stl-success`
         : `${origin}/products/${product.slug}?checkout=success`,

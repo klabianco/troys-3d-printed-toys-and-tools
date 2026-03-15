@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getAllProducts, getBySlug } from "@/lib/products";
 import { Suspense } from "react";
 import BuyButton from "@/components/BuyButton";
+import ColorPartSelector from "@/components/ColorPartSelector";
 import CheckoutSuccess from "@/components/CheckoutSuccess";
 import DownloadButton from "@/components/DownloadButton";
 import ProductImage from "@/components/ProductImage";
@@ -63,7 +64,15 @@ export default async function ProductDetailPage({
 
           <div className="mt-6 flex flex-wrap gap-4">
             {product.inStock ? (
-              <BuyButton slug={product.slug} price={product.price} />
+              product.colorParts && product.colorParts.length > 0 ? (
+                <ColorPartSelector
+                  slug={product.slug}
+                  price={product.price}
+                  colorParts={product.colorParts}
+                />
+              ) : (
+                <BuyButton slug={product.slug} price={product.price} />
+              )
             ) : (
               <span className="rounded-lg bg-gray-200 px-6 py-3 text-sm font-semibold text-gray-500">
                 Out of Stock

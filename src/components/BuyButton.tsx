@@ -2,7 +2,17 @@
 
 import { useState } from "react";
 
-export default function BuyButton({ slug, price }: { slug: string; price: number }) {
+export default function BuyButton({
+  slug,
+  price,
+  colorSelections,
+  disabled,
+}: {
+  slug: string;
+  price: number;
+  colorSelections?: Record<string, string>;
+  disabled?: boolean;
+}) {
   const [loading, setLoading] = useState(false);
 
   async function handleClick() {
@@ -11,7 +21,7 @@ export default function BuyButton({ slug, price }: { slug: string; price: number
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug }),
+        body: JSON.stringify({ slug, colorSelections }),
       });
       const data = await res.json();
       if (data.url) {
@@ -29,7 +39,7 @@ export default function BuyButton({ slug, price }: { slug: string; price: number
   return (
     <button
       onClick={handleClick}
-      disabled={loading}
+      disabled={loading || disabled}
       className="rounded-lg bg-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow transition hover:bg-emerald-700 disabled:opacity-50"
     >
       {loading ? "Loading..." : `Buy Physical Print ($${(price / 100).toFixed(2)})`}
