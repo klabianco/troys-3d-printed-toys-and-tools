@@ -30,7 +30,7 @@ export const SPECIAL_COLORS: FilamentColorDef[] = [
   { name: "Glow Red", hex: "#FCA5A5", special: true },
   { name: "Glow Blue", hex: "#93C5FD", special: true },
   { name: "Glow Purple", hex: "#C4B5FD", special: true },
-  { name: "Glow Multi-Color", hex: "#FDE047", hex2: "#C4B5FD", special: true },
+  { name: "Glow Multi-Color", hex: "rainbow", special: true },
 ];
 
 export const ALL_COLORS: FilamentColorDef[] = [...STANDARD_COLORS, ...SPECIAL_COLORS];

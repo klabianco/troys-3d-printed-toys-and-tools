@@ -30,11 +30,16 @@ function ColorSwatch({
           : "border-gray-300 hover:border-gray-400"
       }`}
       style={
-        color.hex2
+        color.hex === "rainbow"
           ? {
-              background: `linear-gradient(135deg, ${color.hex} 50%, ${color.hex2} 50%)`,
+              background:
+                "conic-gradient(red, orange, yellow, green, cyan, blue, violet, red)",
             }
-          : { backgroundColor: color.hex }
+          : color.hex2
+            ? {
+                background: `linear-gradient(135deg, ${color.hex} 50%, ${color.hex2} 50%)`,
+              }
+            : { backgroundColor: color.hex }
       }
     />
   );
