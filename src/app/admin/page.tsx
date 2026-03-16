@@ -389,10 +389,17 @@ export default function AdminPage() {
                     <option>Toys</option>
                     <option>Gadgets</option>
                   </select>
+                  <a
+                    href={`/products/${product.slug}`}
+                    target="_blank"
+                    className="ml-auto rounded px-2 py-1 text-xs font-medium text-indigo-600 transition hover:bg-indigo-50"
+                  >
+                    View
+                  </a>
                   <button
                     onClick={() => generateFromName(product.slug)}
                     disabled={generating === product.slug}
-                    className="ml-auto rounded px-2 py-1 text-xs font-medium text-emerald-600 transition hover:bg-emerald-50 disabled:opacity-50"
+                    className="rounded px-2 py-1 text-xs font-medium text-emerald-600 transition hover:bg-emerald-50 disabled:opacity-50"
                   >
                     {generating === product.slug ? "Generating..." : "Autofill with AI"}
                   </button>
