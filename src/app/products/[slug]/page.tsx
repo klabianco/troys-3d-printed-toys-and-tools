@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getAllProducts, getBySlug } from "@/lib/products";
+import { getAllProducts, getBySlugLive } from "@/lib/products";
 import { Suspense } from "react";
 import BuyButton from "@/components/BuyButton";
 import ColorPartSelector from "@/components/ColorPartSelector";
@@ -8,19 +8,20 @@ import DownloadButton from "@/components/DownloadButton";
 import ProductImage from "@/components/ProductImage";
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 export function generateStaticParams() {
   return getAllProducts().map((p) => ({ slug: p.slug }));
 }
 
-export function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
-  return params.then(({ slug }) => {
-    const product = getBySlug(slug);
-    if (!product) return { title: "Product Not Found" };
-    return {
-      title: `${product.name} — Troy's 3D Prints`,
-      description: product.shortDescription,
-    };
-  });
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const product = await getBySlugLive(slug);
+  if (!product) return { title: "Product Not Found" };
+  return {
+    title: `${product.name} — Troy's 3D Prints`,
+    description: product.shortDescription,
+  };
 }
 
 export default async function ProductDetailPage({
@@ -29,7 +30,7 @@ export default async function ProductDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const product = getBySlug(slug);
+  const product = await getBySlugLive(slug);
 
   if (!product) {
     notFound();

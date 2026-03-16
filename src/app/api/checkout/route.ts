@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
-import { getBySlug } from "@/lib/products";
+import { getBySlugLive } from "@/lib/products";
 
 export async function POST(req: NextRequest) {
   try {
     const { slug, type, colorSelections } = await req.json();
 
-    const product = getBySlug(slug);
+    const product = await getBySlugLive(slug);
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }

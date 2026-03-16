@@ -1,3 +1,4 @@
+import { head } from "@vercel/blob";
 import productsData from "@/data/products.json";
 
 export interface Product {
@@ -16,6 +17,26 @@ export interface Product {
 }
 
 const products: Product[] = productsData;
+
+// Read products from Vercel Blob (admin-managed), falling back to bundled JSON
+async function liveProducts(): Promise<Product[]> {
+  try {
+    const blob = await head("data/products.json");
+    const res = await fetch(blob.url, { next: { revalidate: 0 } });
+    return await res.json();
+  } catch {
+    return products;
+  }
+}
+
+export async function getAllProductsLive(): Promise<Product[]> {
+  return liveProducts();
+}
+
+export async function getBySlugLive(slug: string): Promise<Product | undefined> {
+  const all = await liveProducts();
+  return all.find((p) => p.slug === slug);
+}
 
 export function getAllProducts(): Product[] {
   return products;
