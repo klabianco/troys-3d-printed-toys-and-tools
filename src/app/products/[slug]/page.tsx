@@ -66,15 +66,11 @@ export default async function ProductDetailPage({
 
           <div className="mt-6 flex flex-wrap gap-4">
             {product.inStock ? (
-              product.colorParts && product.colorParts.length > 0 ? (
                 <ColorPartSelector
                   slug={product.slug}
                   price={product.price}
-                  colorParts={product.colorParts}
+                  colorParts={product.colorParts && product.colorParts.length > 0 ? product.colorParts : ["Color"]}
                 />
-              ) : (
-                <BuyButton slug={product.slug} price={product.price} />
-              )
             ) : (
               <span className="rounded-lg bg-gray-200 px-6 py-3 text-sm font-semibold text-gray-500">
                 Out of Stock
