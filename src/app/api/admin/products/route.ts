@@ -7,7 +7,7 @@ const PRODUCTS_BLOB_KEY = "data/products.json";
 async function readProducts() {
   try {
     const blob = await head(PRODUCTS_BLOB_KEY);
-    const res = await fetch(blob.url);
+    const res = await fetch(blob.url, { cache: "no-store" });
     return await res.json();
   } catch {
     // Blob doesn't exist yet — seed it from the bundled products.json

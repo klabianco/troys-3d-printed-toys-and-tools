@@ -22,7 +22,7 @@ const products: Product[] = productsData;
 async function liveProducts(): Promise<Product[]> {
   try {
     const blob = await head("data/products.json");
-    const res = await fetch(blob.url, { next: { revalidate: 0 } });
+    const res = await fetch(blob.url, { cache: "no-store" });
     return await res.json();
   } catch {
     return products;
