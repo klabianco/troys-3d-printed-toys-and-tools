@@ -1,9 +1,11 @@
 import HeroSection from "@/components/HeroSection";
 import ProductGrid from "@/components/ProductGrid";
-import { getFeaturedProducts } from "@/lib/products";
+import { getFeaturedProductsLive } from "@/lib/products";
 
-export default function HomePage() {
-  const featured = getFeaturedProducts();
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const featured = await getFeaturedProductsLive();
 
   return (
     <>

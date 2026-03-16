@@ -1,14 +1,16 @@
 import CategoryFilter from "@/components/CategoryFilter";
-import { getAllProducts, getCategories } from "@/lib/products";
+import { getAllProductsLive, getCategoriesLive } from "@/lib/products";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Products — Troy's 3D Printed Toys & Tools",
   description: "Browse all 3D printed tools, toys, and gadgets.",
 };
 
-export default function ProductsPage() {
-  const products = getAllProducts();
-  const categories = getCategories();
+export default async function ProductsPage() {
+  const products = await getAllProductsLive();
+  const categories = await getCategoriesLive();
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-16">

@@ -58,6 +58,16 @@ export function getFeaturedProducts(): Product[] {
   return products.filter((p) => p.featured);
 }
 
+export async function getCategoriesLive(): Promise<string[]> {
+  const all = await liveProducts();
+  return [...new Set(all.map((p) => p.category))];
+}
+
+export async function getFeaturedProductsLive(): Promise<Product[]> {
+  const all = await liveProducts();
+  return all.filter((p) => p.featured);
+}
+
 export function formatPrice(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }

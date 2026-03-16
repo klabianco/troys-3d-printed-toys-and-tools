@@ -412,6 +412,7 @@ export default function AdminPage() {
                     <div className="flex items-center">
                       <span className="mr-1 text-gray-400">$</span>
                       <input
+                        key={product.price}
                         type="number"
                         step="0.01"
                         min="0"
@@ -435,6 +436,7 @@ export default function AdminPage() {
                     <div className="flex items-center">
                       <span className="mr-1 text-gray-400">$</span>
                       <input
+                        key={product.stlPrice}
                         type="number"
                         step="0.01"
                         min="0"

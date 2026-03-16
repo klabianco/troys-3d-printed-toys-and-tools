@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getAllProducts, getBySlugLive } from "@/lib/products";
+import { getAllProductsLive, getBySlugLive } from "@/lib/products";
 import { Suspense } from "react";
 import BuyButton from "@/components/BuyButton";
 import ColorPartSelector from "@/components/ColorPartSelector";
@@ -10,8 +10,9 @@ import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
-export function generateStaticParams() {
-  return getAllProducts().map((p) => ({ slug: p.slug }));
+export async function generateStaticParams() {
+  const products = await getAllProductsLive();
+  return products.map((p) => ({ slug: p.slug }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
