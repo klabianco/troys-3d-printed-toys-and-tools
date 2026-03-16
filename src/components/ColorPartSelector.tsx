@@ -1,8 +1,44 @@
 "use client";
 
 import { useState } from "react";
-import { FILAMENT_COLORS, COLOR_HEX } from "@/lib/colors";
+import {
+  STANDARD_COLORS,
+  SPECIAL_COLORS,
+  SPECIAL_FILAMENT_SURCHARGE,
+  isSpecialColor,
+  type FilamentColorDef,
+} from "@/lib/colors";
 import BuyButton from "./BuyButton";
+
+function ColorSwatch({
+  color,
+  selected,
+  onClick,
+}: {
+  color: FilamentColorDef;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      title={color.name}
+      onClick={onClick}
+      className={`h-8 w-8 rounded-full border-2 transition ${
+        selected
+          ? "border-indigo-600 ring-2 ring-indigo-300"
+          : "border-gray-300 hover:border-gray-400"
+      }`}
+      style={
+        color.hex2
+          ? {
+              background: `linear-gradient(135deg, ${color.hex} 50%, ${color.hex2} 50%)`,
+            }
+          : { backgroundColor: color.hex }
+      }
+    />
+  );
+}
 
 export default function ColorPartSelector({
   slug,
@@ -17,8 +53,12 @@ export default function ColorPartSelector({
 
   const allSelected = colorParts.every((part) => selections[part]);
 
-  function selectColor(part: string, color: string) {
-    setSelections((prev) => ({ ...prev, [part]: color }));
+  const specialCount = Object.values(selections).filter(isSpecialColor).length;
+  const totalSurcharge = specialCount * SPECIAL_FILAMENT_SURCHARGE;
+  const totalPrice = price + totalSurcharge;
+
+  function selectColor(part: string, colorName: string) {
+    setSelections((prev) => ({ ...prev, [part]: colorName }));
   }
 
   return (
@@ -33,19 +73,28 @@ export default function ColorPartSelector({
               </span>
             )}
           </label>
+
           <div className="flex flex-wrap gap-2">
-            {FILAMENT_COLORS.map((color) => (
-              <button
-                key={color}
-                type="button"
-                title={color}
-                onClick={() => selectColor(part, color)}
-                className={`h-8 w-8 rounded-full border-2 transition ${
-                  selections[part] === color
-                    ? "border-indigo-600 ring-2 ring-indigo-300"
-                    : "border-gray-300 hover:border-gray-400"
-                }`}
-                style={{ backgroundColor: COLOR_HEX[color] }}
+            {STANDARD_COLORS.map((color) => (
+              <ColorSwatch
+                key={color.name}
+                color={color}
+                selected={selections[part] === color.name}
+                onClick={() => selectColor(part, color.name)}
+              />
+            ))}
+          </div>
+
+          <p className="mb-1 mt-2 text-xs text-gray-400">
+            Special (+${(SPECIAL_FILAMENT_SURCHARGE / 100).toFixed(2)}/part)
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {SPECIAL_COLORS.map((color) => (
+              <ColorSwatch
+                key={color.name}
+                color={color}
+                selected={selections[part] === color.name}
+                onClick={() => selectColor(part, color.name)}
               />
             ))}
           </div>
@@ -58,9 +107,15 @@ export default function ColorPartSelector({
         </p>
       )}
 
+      {totalSurcharge > 0 && (
+        <p className="text-xs text-gray-500">
+          Includes +${(totalSurcharge / 100).toFixed(2)} for special filament
+        </p>
+      )}
+
       <BuyButton
         slug={slug}
-        price={price}
+        price={totalPrice}
         colorSelections={allSelected ? selections : undefined}
         disabled={!allSelected}
       />
