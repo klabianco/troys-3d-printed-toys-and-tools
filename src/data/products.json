@@ -29,6 +29,10 @@
     "stlFiles": [],
     "stlPrice": 299,
     "featured": true,
-    "inStock": true
+    "inStock": true,
+    "colorParts": [
+      "top half",
+      "bottom half"
+    ]
   }
 ]

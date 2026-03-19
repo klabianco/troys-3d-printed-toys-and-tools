@@ -3,11 +3,22 @@
 import { useEffect, useState, useRef } from "react";
 import type { Product } from "@/lib/products";
 
+type Order = {
+  id: string;
+  date: string;
+  amount: number;
+  productName: string;
+  customerEmail: string | null;
+  colorSelections: Record<string, string>;
+};
+
 export default function AdminPage() {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [activeTab, setActiveTab] = useState<"orders" | "products">("orders");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
@@ -23,7 +34,9 @@ export default function AdminPage() {
       .then((r) => {
         if (r.ok) {
           setAuthenticated(true);
-          return fetch("/api/admin/products").then((r) => r.json()).then(setProducts);
+          fetch("/api/admin/products").then((r) => r.json()).then(setProducts);
+          fetch("/api/admin/orders").then((r) => r.json()).then((data) => { if (Array.isArray(data)) setOrders(data); });
+          return;
         }
         setAuthenticated(false);
       });
@@ -39,6 +52,7 @@ export default function AdminPage() {
     if (res.ok) {
       setAuthenticated(true);
       fetch("/api/admin/products").then((r) => r.json()).then(setProducts);
+      fetch("/api/admin/orders").then((r) => r.json()).then((data) => { if (Array.isArray(data)) setOrders(data); });
     } else {
       setPinError(true);
       setPin("");
@@ -262,359 +276,428 @@ export default function AdminPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
-      <div className="mb-8 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Admin — Manage Products</h1>
-        <div className="flex gap-3">
-          <button
-            onClick={() => analyzeInputRef.current?.click()}
-            disabled={analyzing}
-            className="rounded-lg border border-emerald-600 px-4 py-2 text-sm font-semibold text-emerald-600 transition hover:bg-emerald-50 disabled:opacity-50"
-          >
-            {analyzing ? "Analyzing..." : "Add from Photo"}
-          </button>
-          <input
-            ref={analyzeInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) addFromPhoto(file);
-              e.target.value = "";
-            }}
-          />
-          <button
-            onClick={addProduct}
-            className="rounded-lg border border-indigo-600 px-4 py-2 text-sm font-semibold text-indigo-600 transition hover:bg-indigo-50"
-          >
-            + Add Manually
-          </button>
-          <button
-            onClick={saveAll}
-            disabled={saving || saved}
-            className="rounded-lg bg-indigo-600 px-6 py-2 text-sm font-semibold text-white shadow transition hover:bg-indigo-700 disabled:opacity-50"
-          >
-            {saving ? "Saving..." : saved ? "Saved!" : "Save All Changes"}
-          </button>
-        </div>
+      <h1 className="mb-6 text-2xl font-bold text-gray-900">Admin</h1>
+
+      {/* Tabs */}
+      <div className="mb-6 flex border-b border-gray-200">
+        <button
+          onClick={() => setActiveTab("orders")}
+          className={`px-4 py-2 text-sm font-medium transition ${
+            activeTab === "orders"
+              ? "border-b-2 border-indigo-600 text-indigo-600"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          Recent Orders
+        </button>
+        <button
+          onClick={() => setActiveTab("products")}
+          className={`px-4 py-2 text-sm font-medium transition ${
+            activeTab === "products"
+              ? "border-b-2 border-indigo-600 text-indigo-600"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          Products
+        </button>
       </div>
 
-      {analyzing && (
-        <div className="mb-6 flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
-          <span className="text-sm font-medium text-emerald-700">
-            Analyzing photo with AI... This may take a few seconds.
-          </span>
+      {/* Orders Tab */}
+      {activeTab === "orders" && (
+        <div>
+          {orders.length === 0 ? (
+            <div className="rounded-lg border border-gray-200 bg-white py-8 text-center text-sm text-gray-400">
+              No orders yet.
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-gray-50">
+                    <th className="px-4 py-2 text-left text-xs font-medium uppercase text-gray-500">Date</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium uppercase text-gray-500">Product</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium uppercase text-gray-500">Amount</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium uppercase text-gray-500">Customer</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium uppercase text-gray-500">Colors</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orders.map((order) => {
+                    const colorStr = Object.entries(order.colorSelections)
+                      .map(([part, color]) => `${part}: ${color}`)
+                      .join(", ");
+                    return (
+                      <tr key={order.id} className="border-b border-gray-100">
+                        <td className="px-4 py-2 text-gray-600">{new Date(order.date).toLocaleDateString()}</td>
+                        <td className="px-4 py-2 text-gray-900">{order.productName}</td>
+                        <td className="px-4 py-2 text-gray-600">${((order.amount ?? 0) / 100).toFixed(2)}</td>
+                        <td className="px-4 py-2 text-gray-600">{order.customerEmail || "—"}</td>
+                        <td className="px-4 py-2 text-gray-600">{colorStr || "—"}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
-      {products.length === 0 && !analyzing && (
-        <div className="py-16 text-center text-gray-400">
-          <p className="text-lg">No products yet.</p>
-          <p className="mt-1 text-sm">Use &quot;Add from Photo&quot; or &quot;+ Add Manually&quot; to get started.</p>
-        </div>
-      )}
+      {/* Products Tab */}
+      {activeTab === "products" && (
+        <div>
+          <div className="mb-6 flex items-center justify-end gap-3">
+            <button
+              onClick={() => analyzeInputRef.current?.click()}
+              disabled={analyzing}
+              className="rounded-lg border border-emerald-600 px-4 py-2 text-sm font-semibold text-emerald-600 transition hover:bg-emerald-50 disabled:opacity-50"
+            >
+              {analyzing ? "Analyzing..." : "Add from Photo"}
+            </button>
+            <input
+              ref={analyzeInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) addFromPhoto(file);
+                e.target.value = "";
+              }}
+            />
+            <button
+              onClick={addProduct}
+              className="rounded-lg border border-indigo-600 px-4 py-2 text-sm font-semibold text-indigo-600 transition hover:bg-indigo-50"
+            >
+              + Add Manually
+            </button>
+            <button
+              onClick={saveAll}
+              disabled={saving || saved}
+              className="rounded-lg bg-indigo-600 px-6 py-2 text-sm font-semibold text-white shadow transition hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {saving ? "Saving..." : saved ? "Saved!" : "Save All Changes"}
+            </button>
+          </div>
 
-      <div className="space-y-6">
-        {products.map((product) => (
-          <div
-            key={product.slug}
-            className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm"
-          >
-            <div className="flex gap-6">
-              {/* Image section */}
-              <div className="shrink-0">
-                <div
-                  className="relative h-32 w-32 cursor-pointer overflow-hidden rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 hover:border-indigo-400"
-                  onClick={() => fileInputRefs.current[product.slug]?.click()}
-                >
-                  {product.images[0] && !product.images[0].includes("placeholder") ? (
-                    <>
-                      <img
-                        src={product.images[0]}
-                        alt={product.name}
-                        className="h-full w-full object-cover"
-                      />
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition hover:opacity-100">
-                        <span className="text-xs font-medium text-white">Change</span>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex h-full flex-col items-center justify-center text-gray-400">
-                      <span className="text-2xl">
-                        {product.category === "Tools"
-                          ? "\u{1F527}"
-                          : product.category === "Toys"
-                            ? "\u{1F3B2}"
-                            : "\u{1F4F1}"}
-                      </span>
-                      <span className="mt-1 text-xs">Click to upload</span>
-                    </div>
-                  )}
-                  {uploading === product.slug && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-white/80">
-                      <span className="text-sm text-gray-500">Uploading...</span>
-                    </div>
-                  )}
-                </div>
-                <input
-                  ref={(el) => { fileInputRefs.current[product.slug] = el; }}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) uploadImage(product.slug, file);
-                    e.target.value = "";
-                  }}
-                />
-              </div>
+          {analyzing && (
+            <div className="mb-6 flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
+              <span className="text-sm font-medium text-emerald-700">
+                Analyzing photo with AI... This may take a few seconds.
+              </span>
+            </div>
+          )}
 
-              {/* Fields */}
-              <div className="flex-1 space-y-3">
-                <div className="flex items-center gap-3">
-                  <input
-                    type="text"
-                    value={product.name}
-                    onChange={(e) => updateProduct(product.slug, "name", e.target.value)}
-                    className="text-lg font-semibold text-gray-900 border-b border-transparent hover:border-gray-300 focus:border-indigo-500 focus:outline-none"
-                  />
-                  <select
-                    value={product.category}
-                    onChange={(e) => updateProduct(product.slug, "category", e.target.value)}
-                    className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-600 border-none focus:outline-none"
-                  >
-                    <option>Tools</option>
-                    <option>Toys</option>
-                    <option>Gadgets</option>
-                  </select>
-                  <a
-                    href={`/products/${product.slug}`}
-                    target="_blank"
-                    className="ml-auto rounded px-2 py-1 text-xs font-medium text-indigo-600 transition hover:bg-indigo-50"
-                  >
-                    View
-                  </a>
-                  <button
-                    onClick={() => generateFromName(product.slug)}
-                    disabled={generating === product.slug}
-                    className="rounded px-2 py-1 text-xs font-medium text-emerald-600 transition hover:bg-emerald-50 disabled:opacity-50"
-                  >
-                    {generating === product.slug ? "Generating..." : "Autofill with AI"}
-                  </button>
-                  <button
-                    onClick={() => deleteProduct(product.slug)}
-                    className="rounded px-2 py-1 text-xs font-medium text-red-600 transition hover:bg-red-50"
-                  >
-                    Delete
-                  </button>
-                </div>
+          {products.length === 0 && !analyzing && (
+            <div className="py-16 text-center text-gray-400">
+              <p className="text-lg">No products yet.</p>
+              <p className="mt-1 text-sm">Use &quot;Add from Photo&quot; or &quot;+ Add Manually&quot; to get started.</p>
+            </div>
+          )}
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-500">
-                      Price (in dollars)
-                    </label>
-                    <div className="flex items-center">
-                      <span className="mr-1 text-gray-400">$</span>
-                      <input
-                        key={product.price}
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        defaultValue={(product.price / 100).toFixed(2)}
-                        onBlur={(e) =>
-                          updateProduct(
-                            product.slug,
-                            "price",
-                            Math.round(parseFloat(e.target.value || "0") * 100)
-                          )
-                        }
-                        className="w-28 rounded border border-gray-300 px-2 py-1 text-sm"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-500">
-                      STL Price (in dollars, 0 = free)
-                    </label>
-                    <div className="flex items-center">
-                      <span className="mr-1 text-gray-400">$</span>
-                      <input
-                        key={product.stlPrice}
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        defaultValue={(product.stlPrice / 100).toFixed(2)}
-                        onBlur={(e) =>
-                          updateProduct(
-                            product.slug,
-                            "stlPrice",
-                            Math.round(parseFloat(e.target.value || "0") * 100)
-                          )
-                        }
-                        className="w-28 rounded border border-gray-300 px-2 py-1 text-sm"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-500">
-                    Short Description
-                  </label>
-                  <input
-                    type="text"
-                    value={product.shortDescription}
-                    onChange={(e) =>
-                      updateProduct(product.slug, "shortDescription", e.target.value)
-                    }
-                    className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-500">
-                    Full Description
-                  </label>
-                  <textarea
-                    value={product.description}
-                    onChange={(e) =>
-                      updateProduct(product.slug, "description", e.target.value)
-                    }
-                    rows={2}
-                    className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
-                  />
-                </div>
-
-                <div className="flex items-center gap-6">
-                  <label className="flex items-center gap-2 text-sm text-gray-600">
-                    <input
-                      type="checkbox"
-                      checked={product.featured}
-                      onChange={(e) =>
-                        updateProduct(product.slug, "featured", e.target.checked)
-                      }
-                      className="rounded border-gray-300"
-                    />
-                    Featured
-                  </label>
-                  <label className="flex items-center gap-2 text-sm text-gray-600">
-                    <input
-                      type="checkbox"
-                      checked={product.inStock}
-                      onChange={(e) =>
-                        updateProduct(product.slug, "inStock", e.target.checked)
-                      }
-                      className="rounded border-gray-300"
-                    />
-                    In Stock
-                  </label>
-                </div>
-
-                <div>
-                  <div className="mb-1 flex items-center gap-3">
-                    <label className="text-xs font-medium text-gray-500">Color Parts:</label>
-                    <button
-                      onClick={() => {
-                        const name = prompt("Part name (e.g. Top, Bottom, Body):");
-                        if (!name?.trim()) return;
-                        const existing = product.colorParts || [];
-                        updateProduct(product.slug, "colorParts", [...existing, name.trim()]);
-                      }}
-                      className="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-600 transition hover:bg-gray-50"
+          <div className="space-y-6">
+            {products.map((product) => (
+              <div
+                key={product.slug}
+                className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm"
+              >
+                <div className="flex gap-6">
+                  {/* Image section */}
+                  <div className="shrink-0">
+                    <div
+                      className="relative h-32 w-32 cursor-pointer overflow-hidden rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 hover:border-indigo-400"
+                      onClick={() => fileInputRefs.current[product.slug]?.click()}
                     >
-                      + Add Part
-                    </button>
-                  </div>
-                  {product.colorParts && product.colorParts.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {product.colorParts.map((part, i) => (
-                        <span
-                          key={i}
-                          className="inline-flex items-center gap-1 rounded bg-gray-100 px-2 py-1 text-xs text-gray-600"
-                        >
-                          {part}
-                          <button
-                            onClick={() =>
-                              updateProduct(
-                                product.slug,
-                                "colorParts",
-                                (product.colorParts || []).filter((_, j) => j !== i)
-                              )
-                            }
-                            className="ml-1 text-red-400 hover:text-red-600"
-                          >
-                            &times;
-                          </button>
-                        </span>
-                      ))}
+                      {product.images[0] && !product.images[0].includes("placeholder") ? (
+                        <>
+                          <img
+                            src={product.images[0]}
+                            alt={product.name}
+                            className="h-full w-full object-cover"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition hover:opacity-100">
+                            <span className="text-xs font-medium text-white">Change</span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex h-full flex-col items-center justify-center text-gray-400">
+                          <span className="text-2xl">
+                            {product.category === "Tools"
+                              ? "\u{1F527}"
+                              : product.category === "Toys"
+                                ? "\u{1F3B2}"
+                                : "\u{1F4F1}"}
+                          </span>
+                          <span className="mt-1 text-xs">Click to upload</span>
+                        </div>
+                      )}
+                      {uploading === product.slug && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-white/80">
+                          <span className="text-sm text-gray-500">Uploading...</span>
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                    <span className="text-xs text-gray-400">No color parts — customers won&apos;t pick colors</span>
-                  )}
-                </div>
-
-                <div>
-                  <div className="mb-1 flex items-center gap-3">
-                    <label className="text-xs font-medium text-gray-500">STL Files:</label>
-                    <button
-                      onClick={() => stlInputRefs.current[product.slug]?.click()}
-                      disabled={uploadingStl === product.slug}
-                      className="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-600 transition hover:bg-gray-50 disabled:opacity-50"
-                    >
-                      {uploadingStl === product.slug ? "Uploading..." : "+ Add STL"}
-                    </button>
                     <input
-                      ref={(el) => { stlInputRefs.current[product.slug] = el; }}
+                      ref={(el) => { fileInputRefs.current[product.slug] = el; }}
                       type="file"
-                      accept=".stl"
+                      accept="image/*"
                       className="hidden"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
-                        if (file) uploadStl(product.slug, file);
+                        if (file) uploadImage(product.slug, file);
                         e.target.value = "";
                       }}
                     />
                   </div>
-                  {product.stlFiles && product.stlFiles.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {product.stlFiles.map((file) => (
-                        <span
-                          key={file}
-                          className="inline-flex items-center gap-1 rounded bg-gray-100 px-2 py-1 text-xs text-gray-600"
-                        >
-                          {file.split("/").pop()}
-                          <button
-                            onClick={() => removeStlFile(product.slug, file)}
-                            className="ml-1 text-red-400 hover:text-red-600"
-                          >
-                            &times;
-                          </button>
-                        </span>
-                      ))}
+
+                  {/* Fields */}
+                  <div className="flex-1 space-y-3">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="text"
+                        value={product.name}
+                        onChange={(e) => updateProduct(product.slug, "name", e.target.value)}
+                        className="text-lg font-semibold text-gray-900 border-b border-transparent hover:border-gray-300 focus:border-indigo-500 focus:outline-none"
+                      />
+                      <select
+                        value={product.category}
+                        onChange={(e) => updateProduct(product.slug, "category", e.target.value)}
+                        className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-600 border-none focus:outline-none"
+                      >
+                        <option>Tools</option>
+                        <option>Toys</option>
+                        <option>Gadgets</option>
+                      </select>
+                      <a
+                        href={`/products/${product.slug}`}
+                        target="_blank"
+                        className="ml-auto rounded px-2 py-1 text-xs font-medium text-indigo-600 transition hover:bg-indigo-50"
+                      >
+                        View
+                      </a>
+                      <button
+                        onClick={() => generateFromName(product.slug)}
+                        disabled={generating === product.slug}
+                        className="rounded px-2 py-1 text-xs font-medium text-emerald-600 transition hover:bg-emerald-50 disabled:opacity-50"
+                      >
+                        {generating === product.slug ? "Generating..." : "Autofill with AI"}
+                      </button>
+                      <button
+                        onClick={() => deleteProduct(product.slug)}
+                        className="rounded px-2 py-1 text-xs font-medium text-red-600 transition hover:bg-red-50"
+                      >
+                        Delete
+                      </button>
                     </div>
-                  ) : (
-                    <span className="text-xs text-gray-400">No STL files uploaded</span>
-                  )}
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-gray-500">
+                          Price (in dollars)
+                        </label>
+                        <div className="flex items-center">
+                          <span className="mr-1 text-gray-400">$</span>
+                          <input
+                            key={product.price}
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            defaultValue={(product.price / 100).toFixed(2)}
+                            onBlur={(e) =>
+                              updateProduct(
+                                product.slug,
+                                "price",
+                                Math.round(parseFloat(e.target.value || "0") * 100)
+                              )
+                            }
+                            className="w-28 rounded border border-gray-300 px-2 py-1 text-sm"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-gray-500">
+                          STL Price (in dollars, 0 = free)
+                        </label>
+                        <div className="flex items-center">
+                          <span className="mr-1 text-gray-400">$</span>
+                          <input
+                            key={product.stlPrice}
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            defaultValue={(product.stlPrice / 100).toFixed(2)}
+                            onBlur={(e) =>
+                              updateProduct(
+                                product.slug,
+                                "stlPrice",
+                                Math.round(parseFloat(e.target.value || "0") * 100)
+                              )
+                            }
+                            className="w-28 rounded border border-gray-300 px-2 py-1 text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500">
+                        Short Description
+                      </label>
+                      <input
+                        type="text"
+                        value={product.shortDescription}
+                        onChange={(e) =>
+                          updateProduct(product.slug, "shortDescription", e.target.value)
+                        }
+                        className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500">
+                        Full Description
+                      </label>
+                      <textarea
+                        value={product.description}
+                        onChange={(e) =>
+                          updateProduct(product.slug, "description", e.target.value)
+                        }
+                        rows={2}
+                        className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-6">
+                      <label className="flex items-center gap-2 text-sm text-gray-600">
+                        <input
+                          type="checkbox"
+                          checked={product.featured}
+                          onChange={(e) =>
+                            updateProduct(product.slug, "featured", e.target.checked)
+                          }
+                          className="rounded border-gray-300"
+                        />
+                        Featured
+                      </label>
+                      <label className="flex items-center gap-2 text-sm text-gray-600">
+                        <input
+                          type="checkbox"
+                          checked={product.inStock}
+                          onChange={(e) =>
+                            updateProduct(product.slug, "inStock", e.target.checked)
+                          }
+                          className="rounded border-gray-300"
+                        />
+                        In Stock
+                      </label>
+                    </div>
+
+                    <div>
+                      <div className="mb-1 flex items-center gap-3">
+                        <label className="text-xs font-medium text-gray-500">Color Parts:</label>
+                        <button
+                          onClick={() => {
+                            const name = prompt("Part name (e.g. Top, Bottom, Body):");
+                            if (!name?.trim()) return;
+                            const existing = product.colorParts || [];
+                            updateProduct(product.slug, "colorParts", [...existing, name.trim()]);
+                          }}
+                          className="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-600 transition hover:bg-gray-50"
+                        >
+                          + Add Part
+                        </button>
+                      </div>
+                      {product.colorParts && product.colorParts.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {product.colorParts.map((part, i) => (
+                            <span
+                              key={i}
+                              className="inline-flex items-center gap-1 rounded bg-gray-100 px-2 py-1 text-xs text-gray-600"
+                            >
+                              {part}
+                              <button
+                                onClick={() =>
+                                  updateProduct(
+                                    product.slug,
+                                    "colorParts",
+                                    (product.colorParts || []).filter((_, j) => j !== i)
+                                  )
+                                }
+                                className="ml-1 text-red-400 hover:text-red-600"
+                              >
+                                &times;
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-400">No color parts — customers won&apos;t pick colors</span>
+                      )}
+                    </div>
+
+                    <div>
+                      <div className="mb-1 flex items-center gap-3">
+                        <label className="text-xs font-medium text-gray-500">STL Files:</label>
+                        <button
+                          onClick={() => stlInputRefs.current[product.slug]?.click()}
+                          disabled={uploadingStl === product.slug}
+                          className="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-600 transition hover:bg-gray-50 disabled:opacity-50"
+                        >
+                          {uploadingStl === product.slug ? "Uploading..." : "+ Add STL"}
+                        </button>
+                        <input
+                          ref={(el) => { stlInputRefs.current[product.slug] = el; }}
+                          type="file"
+                          accept=".stl"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) uploadStl(product.slug, file);
+                            e.target.value = "";
+                          }}
+                        />
+                      </div>
+                      {product.stlFiles && product.stlFiles.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {product.stlFiles.map((file) => (
+                            <span
+                              key={file}
+                              className="inline-flex items-center gap-1 rounded bg-gray-100 px-2 py-1 text-xs text-gray-600"
+                            >
+                              {file.split("/").pop()}
+                              <button
+                                onClick={() => removeStlFile(product.slug, file)}
+                                className="ml-1 text-red-400 hover:text-red-600"
+                              >
+                                &times;
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-400">No STL files uploaded</span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      <div className="mt-8 flex justify-end">
-        <button
-          onClick={saveAll}
-          disabled={saving || saved}
-          className="rounded-lg bg-indigo-600 px-6 py-2 text-sm font-semibold text-white shadow transition hover:bg-indigo-700 disabled:opacity-50"
-        >
-          {saving ? "Saving..." : saved ? "Saved!" : "Save All Changes"}
-        </button>
-      </div>
+          <div className="mt-8 flex justify-end">
+            <button
+              onClick={saveAll}
+              disabled={saving || saved}
+              className="rounded-lg bg-indigo-600 px-6 py-2 text-sm font-semibold text-white shadow transition hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {saving ? "Saving..." : saved ? "Saved!" : "Save All Changes"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

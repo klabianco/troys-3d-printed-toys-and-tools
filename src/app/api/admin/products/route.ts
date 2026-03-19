@@ -4,34 +4,40 @@ import { requireAdmin } from "@/lib/admin-auth";
 
 const PRODUCTS_BLOB_KEY = "data/products.json";
 
+async function readFromBlob() {
+  const blob = await head(PRODUCTS_BLOB_KEY);
+  const res = await fetch(blob.url, { cache: "no-store" });
+  return await res.json();
+}
+
+async function readFromFile() {
+  const { readFile } = await import("fs/promises");
+  const path = await import("path");
+  const filePath = path.join(process.cwd(), "src/data/products.json");
+  const data = await readFile(filePath, "utf-8");
+  return JSON.parse(data);
+}
+
 async function readProducts() {
   try {
-    const blob = await head(PRODUCTS_BLOB_KEY);
-    const res = await fetch(blob.url, { cache: "no-store" });
-    return await res.json();
+    return await readFromBlob();
   } catch {
-    // Blob doesn't exist yet — seed it from the bundled products.json
-    const { readFile } = await import("fs/promises");
-    const path = await import("path");
-    const filePath = path.join(process.cwd(), "src/data/products.json");
-    const data = await readFile(filePath, "utf-8");
-    const products = JSON.parse(data);
-    // Persist to Blob so future saves work
-    await put(PRODUCTS_BLOB_KEY, JSON.stringify(products, null, 2), {
-      access: "public",
-      addRandomSuffix: false,
-      allowOverwrite: true,
-    });
-    return products;
+    // Blob not configured or not found — fall back to local file
   }
+  return await readFromFile();
 }
 
 export async function GET() {
   const denied = await requireAdmin();
   if (denied) return denied;
 
-  const products = await readProducts();
-  return NextResponse.json(products);
+  try {
+    const products = await readProducts();
+    return NextResponse.json(products);
+  } catch (error) {
+    console.error("Failed to read products:", error);
+    return NextResponse.json([], { status: 200 });
+  }
 }
 
 export async function PUT(req: NextRequest) {
@@ -39,10 +45,20 @@ export async function PUT(req: NextRequest) {
   if (denied) return denied;
 
   const products = await req.json();
-  await put(PRODUCTS_BLOB_KEY, JSON.stringify(products, null, 2), {
-    access: "public",
-    addRandomSuffix: false,
-    allowOverwrite: true,
-  });
+
+  // Try Blob first, fall back to local file
+  try {
+    await put(PRODUCTS_BLOB_KEY, JSON.stringify(products, null, 2), {
+      access: "public",
+      addRandomSuffix: false,
+      allowOverwrite: true,
+    });
+  } catch {
+    // Blob not configured — save to local file instead
+    const { writeFile } = await import("fs/promises");
+    const path = await import("path");
+    const filePath = path.join(process.cwd(), "src/data/products.json");
+    await writeFile(filePath, JSON.stringify(products, null, 2));
+  }
   return NextResponse.json({ ok: true });
 }

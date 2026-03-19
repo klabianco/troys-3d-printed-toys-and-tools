@@ -32,6 +32,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Build a human-readable color summary for the product description
+    const colorSummary = Object.entries(metadata)
+      .filter(([key]) => key.startsWith("color_"))
+      .map(([key, value]) => `${key.replace("color_", "")}: ${value}`)
+      .join(", ");
+
     const stripe = getStripe();
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -43,17 +49,21 @@ export async function POST(req: NextRequest) {
               name: isStl ? `${product.name} (STL File)` : product.name,
               description: isStl
                 ? `STL file download for ${product.name}`
-                : product.shortDescription,
+                : colorSummary
+                  ? `${product.shortDescription} | Colors: ${colorSummary}`
+                  : product.shortDescription,
             },
             unit_amount: isStl ? product.stlPrice : product.price,
           },
           quantity: 1,
         },
       ],
-      ...(Object.keys(metadata).length > 0 ? { metadata } : {}),
+      ...(Object.keys(metadata).length > 0
+        ? { metadata, payment_intent_data: { metadata } }
+        : {}),
       success_url: isStl
         ? `${origin}/products/${product.slug}?checkout=stl-success`
-        : `${origin}/products/${product.slug}?checkout=success`,
+        : `${origin}/products/${product.slug}?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/products/${product.slug}`,
     });
 
